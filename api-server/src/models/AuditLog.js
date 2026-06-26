@@ -1,21 +1,19 @@
-/**
- * @module models/AuditLog
- * @description Mongoose schema and model for audit trail entries.
- * Records all analyst review actions for compliance and traceability.
- */
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../database');
 
-const auditLogSchema = new mongoose.Schema({
-  action: { type: String, required: true },
-  transactionId: { type: String, required: true },
-  userId: { type: String, required: true },
-  details: { type: String },
-  timestamp: { type: Date, default: Date.now }
+const AuditLog = sequelize.define('AuditLog', {
+  _id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  action: { type: DataTypes.STRING, allowNull: false },
+  transactionId: { type: DataTypes.STRING, allowNull: false },
+  userId: { type: DataTypes.STRING, allowNull: false },
+  details: { type: DataTypes.TEXT },
+  timestamp: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+}, {
+  timestamps: false,
+  indexes: [
+    { fields: ['transactionId'] },
+    { fields: ['timestamp'] }
+  ]
 });
-
-auditLogSchema.index({ transactionId: 1 });
-auditLogSchema.index({ timestamp: -1 });
-
-const AuditLog = mongoose.model('AuditLog', auditLogSchema);
 
 module.exports = AuditLog;

@@ -8,7 +8,7 @@ require('dotenv').config({ path: require('path').resolve(__dirname, '../../../.e
 
 const config = {
   port: parseInt(process.env.API_PORT || process.env.PORT || '4000', 10),
-  mongoUri: process.env.MONGO_URI || 'mongodb://mongodb:27017/fraudDB',
+  databaseUrl: process.env.DATABASE_URL || 'postgres://postgres:password@localhost:5432/postgres',
   kafkaBrokers: (process.env.KAFKA_BROKERS || 'kafka:9092').split(','),
   kafkaTopic: process.env.KAFKA_TOPIC || 'transactions',
   redisHost: process.env.REDIS_HOST || 'redis',

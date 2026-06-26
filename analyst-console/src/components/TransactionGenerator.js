@@ -104,7 +104,7 @@ export const TransactionGenerator = () => {
 
         <button 
           className="btn btn-normal"
-          style={{ background: '#3b82f6', borderColor: '#3b82f6' }}
+          style={{ background: 'var(--accent-blue-glow, rgba(99, 102, 241, 0.15))', borderColor: 'rgba(99, 102, 241, 0.2)', color: 'var(--accent-blue, #6366f1)' }}
           onClick={handleSendTen}
           disabled={isSending}
         >

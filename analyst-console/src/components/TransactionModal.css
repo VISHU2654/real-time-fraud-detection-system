@@ -4,23 +4,34 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 16px;
 }
 
 .modal-content {
   background: var(--bg-card);
-  width: 90vw;
+  width: 100%;
   max-width: 800px;
-  max-height: 90vh;
-  border-radius: 12px;
+  max-height: 88vh;
+  border-radius: var(--radius-xl);
   border: 1px solid var(--border-color);
   overflow-y: auto;
-  box-shadow: var(--card-shadow);
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
 }
 
 .modal-header {
@@ -29,26 +40,34 @@
   align-items: center;
   padding: 20px 24px;
   border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  z-index: 1;
 }
 
 .modal-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 18px;
+  font-weight: 700;
   color: var(--text-main);
+  letter-spacing: -0.01em;
 }
 
 .close-btn {
-  background: none;
-  border: none;
+  background: var(--bg-dark);
+  border: 1px solid var(--border-color);
   color: var(--text-muted);
   cursor: pointer;
-  padding: 4px;
+  padding: 6px;
   display: flex;
-  transition: color 0.2s ease;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
 }
 
 .close-btn:hover {
   color: var(--text-main);
+  border-color: var(--border-hover);
 }
 
 .modal-body {
@@ -58,24 +77,26 @@
 .modal-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  gap: 16px;
 }
 
 .modal-section {
   background: var(--bg-dark);
-  border-radius: 8px;
-  padding: 16px;
+  border-radius: var(--radius-md);
+  padding: 18px;
   border: 1px solid var(--border-color);
 }
 
 .modal-section h3 {
   margin-top: 0;
   margin-bottom: 16px;
-  font-size: 1.1rem;
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text-main);
   display: flex;
   align-items: center;
   gap: 8px;
+  letter-spacing: -0.01em;
 }
 
 .feature-list {
@@ -87,52 +108,90 @@
 .feature-item {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .feature-label {
-  font-size: 0.75rem;
+  font-size: 11px;
   text-transform: uppercase;
   color: var(--text-muted);
   letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .feature-value {
-  font-size: 0.95rem;
+  font-size: 14px;
   color: var(--text-main);
-  font-family: monospace;
+  font-family: 'Inter', monospace;
+  font-weight: 500;
 }
 
 .map-container {
-  height: 250px;
+  height: 220px;
   width: 100%;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  margin-top: 16px;
+  margin-top: 12px;
   border: 1px solid var(--border-color);
 }
 
 .reasoning-box {
-  margin-top: 24px;
+  margin-top: 16px;
   padding: 16px;
-  background: rgba(239, 68, 68, 0.1);
-  border-left: 4px solid var(--accent-red);
-  border-radius: 0 8px 8px 0;
+  background: var(--accent-red-glow);
+  border-left: 3px solid var(--accent-red);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   color: var(--text-main);
-  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
-/* Responsive modal */
+.reasoning-box strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent-red);
+}
+
+.reasoning-box p {
+  margin: 0;
+}
+
 @media (max-width: 768px) {
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-end;
+  }
+
+  .modal-content {
+    max-height: 92vh;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+
   .modal-grid {
     grid-template-columns: 1fr;
   }
 
-  .modal-content {
-    width: 95vw;
-    max-height: 95vh;
+  .modal-body {
+    padding: 16px;
   }
 
+  .modal-header {
+    padding: 16px;
+  }
+
+  .feature-list {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .map-container {
+    height: 180px;
+  }
+}
+
+@media (max-width: 400px) {
   .feature-list {
     grid-template-columns: 1fr;
   }

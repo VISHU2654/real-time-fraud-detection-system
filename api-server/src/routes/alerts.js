@@ -15,7 +15,7 @@ const router = express.Router();
 router.get('/alerts', async (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    const alerts = await Alert.find().sort({ timestamp: -1 }).limit(limit);
+    const alerts = await Alert.findAll({ order: [['timestamp', 'DESC']], limit });
     res.json(alerts);
   } catch (err) {
     logger.error({ err: err.message }, 'Error fetching alerts');

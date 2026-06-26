@@ -26,10 +26,10 @@ export const LiveFeed = () => {
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'CLEARED': return <ShieldCheck size={16} color="#43a047" />;
-      case 'FLAGGED': return <ShieldAlert size={16} color="#e53935" />;
-      case 'BLOCKED': return <Ban size={16} color="#757575" />;
-      default: return <Clock size={16} color="#9e9e9e" />;
+      case 'CLEARED': return <ShieldCheck size={16} color="#10b981" />;
+      case 'FLAGGED': return <ShieldAlert size={16} color="#ef4444" />;
+      case 'BLOCKED': return <Ban size={16} color="#6b7280" />;
+      default: return <Clock size={16} color="#f59e0b" />;
     }
   };
 

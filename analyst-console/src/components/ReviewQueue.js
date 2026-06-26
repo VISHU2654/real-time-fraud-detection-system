@@ -87,7 +87,7 @@ export const ReviewQueue = () => {
     <div className="review-queue-container">
       <div className="review-toolbar card">
         <div className="search-group">
-          <Search size={18} color="#94a3b8" />
+          <Search size={18} color="#6b7280" />
           <input 
             type="text" 
             placeholder="Search User ID..." 
@@ -97,7 +97,7 @@ export const ReviewQueue = () => {
         </div>
         
         <div className="filter-group">
-          <Filter size={18} color="#94a3b8" />
+          <Filter size={18} color="#6b7280" />
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="ALL">All Status</option>
             <option value="FLAGGED">Flagged (Action Req)</option>

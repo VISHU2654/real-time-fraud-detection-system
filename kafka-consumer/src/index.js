@@ -15,10 +15,13 @@
  * - Model failure → flag for review (not silently clear)
  */
 const { Kafka } = require('kafkajs');
-const mongoose = require('mongoose');
 const ort = require('onnxruntime-node');
 const path = require('path');
 const fs = require('fs');
+const { BedrockRuntimeClient, InvokeModelCommand } = require('@aws-sdk/client-bedrock-runtime');
+const { sequelize, Transaction, Alert, AuditLog } = require('./database');
+
+const bedrockClient = new BedrockRuntimeClient({ region: process.env.AWS_REGION || 'us-east-1' });
 const Redis = require('ioredis');
 const promClient = require('prom-client');
 const express = require('express');
@@ -55,32 +58,14 @@ const transactionMessageSchema = z.object({
   online_order: z.number(),
 }).passthrough();
 
-// --- MONGODB SETUP ---
-mongoose.connect(config.mongoUri)
-  .then(() => logger.info('MongoDB connected'))
-  .catch(err => logger.error({ err: err.message }, 'MongoDB connection error'));
-
-const transactionSchema = new mongoose.Schema({
-  userId: String,
-  amount: Number,
-  timestamp: Date,
-  lat: Number,
-  lon: Number,
-  distance_from_home: Number,
-  repeat_retailer: Number,
-  used_chip: Number,
-  used_pin_number: Number,
-  online_order: Number,
-  fraud_score: Number,
-  status: String,
-  reasoning: String
-}, { timestamps: true, strict: false });
-
-transactionSchema.index({ status: 1 });
-transactionSchema.index({ userId: 1 });
-transactionSchema.index({ createdAt: -1 });
-
-const Transaction = mongoose.model('Transaction', transactionSchema);
+// --- DATABASE SETUP ---
+sequelize.authenticate()
+  .then(() => {
+    logger.info('PostgreSQL connected via Sequelize');
+    return sequelize.sync();
+  })
+  .then(() => logger.info('Database models synced'))
+  .catch(err => logger.error({ err: err.message }, 'Database connection error'));
 
 // --- PROMETHEUS METRICS ---
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
@@ -120,13 +105,17 @@ app.get('/metrics', async (req, res) => {
   res.end(await promClient.register.metrics());
 });
 
-app.get('/health', (req, res) => {
-  const mongoOk = mongoose.connection.readyState === 1;
+app.get('/health', async (req, res) => {
+  let dbOk = false;
+  try {
+    await sequelize.authenticate();
+    dbOk = true;
+  } catch (e) {}
   const redisOk = redis.status === 'ready';
-  const status = mongoOk && redisOk ? 'OK' : 'DEGRADED';
+  const status = dbOk && redisOk ? 'OK' : 'DEGRADED';
   res.status(status === 'OK' ? 200 : 503).json({
     status,
-    mongo: mongoOk ? 'connected' : 'disconnected',
+    database: dbOk ? 'connected' : 'disconnected',
     redis: redisOk ? 'connected' : 'disconnected',
   });
 });
@@ -338,10 +327,45 @@ async function sendToDLQ(message, error, retryCount, topic, partition) {
   }
 }
 
+// --- AI REASONING (BEDROCK) ---
+async function getBedrockReasoning(transaction, features, score, baseReasoning) {
+  const prompt = `You are a fraud detection expert. A transaction has been flagged with a fraud score of ${score.toFixed(2)}.
+Features:
+Amount: ${transaction.amount}
+Distance from home: ${features.distance_from_home}
+Distance from last transaction: ${features.distance_from_last_transaction}
+Repeat retailer: ${transaction.repeat_retailer}
+Used chip: ${transaction.used_chip}
+Used pin: ${transaction.used_pin_number}
+Online order: ${transaction.online_order}
+Base ML Reasoning: ${baseReasoning}
+
+Explain concisely (in 2-3 sentences) why this transaction looks suspicious based on these features.`;
+
+  try {
+    const command = new InvokeModelCommand({
+      modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+      contentType: 'application/json',
+      accept: 'application/json',
+      body: JSON.stringify({
+        anthropic_version: "bedrock-2023-05-31",
+        max_tokens: 200,
+        messages: [{ role: "user", content: [{ type: "text", text: prompt }] }]
+      })
+    });
+    const response = await bedrockClient.send(command);
+    const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+    return responseBody.content[0].text;
+  } catch (error) {
+    logger.error({ err: error.message }, 'Bedrock reasoning failed');
+    return baseReasoning + ' (AI explanation unavailable)';
+  }
+}
+
 // --- MESSAGE PROCESSOR WITH RETRY ---
 async function processMessage(transaction, topic, partition, offset) {
   const features = await runFeatureEngineering(transaction);
-  const { score, reasoning } = await getFraudScoreAndReasoning(features);
+  let { score, reasoning } = await getFraudScoreAndReasoning(features);
 
   let thresh = await redis.get('fraud_threshold');
   if (!thresh) thresh = config.defaultFraudThreshold.toString();
@@ -349,7 +373,29 @@ async function processMessage(transaction, topic, partition, offset) {
 
   const newStatus = score > threshold ? 'FLAGGED' : 'CLEARED';
 
-  await Transaction.findByIdAndUpdate(transaction._id, {
+  if (newStatus === 'FLAGGED') {
+    reasoning = await getBedrockReasoning(transaction, features, score, reasoning);
+    
+    await Alert.create({
+      transactionId: transaction._id,
+      userId: transaction.userId,
+      reasoning: reasoning,
+      status: 'OPEN'
+    });
+  }
+
+  await Transaction.upsert({
+    id: transaction._id,
+    userId: transaction.userId,
+    amount: transaction.amount,
+    timestamp: transaction.timestamp ? new Date(transaction.timestamp) : new Date(),
+    lat: transaction.lat,
+    lon: transaction.lon,
+    distance_from_home: transaction.distance_from_home,
+    repeat_retailer: transaction.repeat_retailer,
+    used_chip: transaction.used_chip,
+    used_pin_number: transaction.used_pin_number,
+    online_order: transaction.online_order,
     fraud_score: score,
     status: newStatus,
     reasoning: reasoning
@@ -412,10 +458,10 @@ const shutdown = async (signal) => {
   }
 
   try {
-    await mongoose.connection.close();
-    logger.info('MongoDB connection closed');
+    await sequelize.close();
+    logger.info('PostgreSQL connection closed');
   } catch (e) {
-    logger.error({ err: e.message }, 'Error closing MongoDB');
+    logger.error({ err: e.message }, 'Error closing PostgreSQL');
   }
 
   try {

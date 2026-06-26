@@ -5,6 +5,7 @@
  */
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const { Op } = require('sequelize');
 const config = require('../config');
 const logger = require('../utils/logger');
 const Transaction = require('../models/Transaction');
@@ -12,6 +13,7 @@ const AuditLog = require('../models/AuditLog');
 const { producer } = require('../services/kafka');
 const { authMiddleware } = require('../middleware/auth');
 const { validate, transactionSchema, reviewSchema, bulkReviewSchema } = require('../middleware/validate');
+const sequelize = require('../database');
 
 const router = express.Router();
 
@@ -25,20 +27,13 @@ const transactionLimiter = rateLimit({
 });
 
 /**
- * Escape special regex characters to prevent ReDoS attacks.
- * @param {string} str - Raw user input
- * @returns {string} Escaped string safe for RegExp constructor
- */
-const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-/**
  * POST /transaction
  * Submit a new transaction for fraud scoring.
- * The transaction is saved to MongoDB and published to Kafka.
+ * The transaction is saved to RDS and published to Kafka.
  */
 router.post('/transaction', transactionLimiter, validate(transactionSchema), async (req, res) => {
   try {
-    const transaction = new Transaction({
+    const transaction = await Transaction.create({
       userId: req.body.userId,
       amount: req.body.amount,
       lat: req.body.lat,
@@ -50,11 +45,9 @@ router.post('/transaction', transactionLimiter, validate(transactionSchema), asy
       online_order: req.body.online_order,
     });
 
-    await transaction.save();
-
     await producer.send({
       topic: config.kafkaTopic,
-      messages: [{ value: JSON.stringify(transaction) }],
+      messages: [{ value: JSON.stringify(transaction.toJSON()) }],
     });
 
     logger.info({ transactionId: transaction._id, userId: transaction.userId }, 'Transaction created');
@@ -71,9 +64,11 @@ router.post('/transaction', transactionLimiter, validate(transactionSchema), asy
  */
 router.get('/transactions/flagged', async (req, res) => {
   try {
-    const flaggedTransactions = await Transaction.find({ status: 'FLAGGED' })
-      .sort({ createdAt: -1 })
-      .limit(200);
+    const flaggedTransactions = await Transaction.findAll({
+      where: { status: 'FLAGGED' },
+      order: [['createdAt', 'DESC']],
+      limit: 200
+    });
     res.status(200).json(flaggedTransactions);
   } catch (err) {
     logger.error({ err: err.message }, 'Error fetching flagged transactions');
@@ -83,22 +78,21 @@ router.get('/transactions/flagged', async (req, res) => {
 
 /**
  * GET /transactions/stats
- * Aggregated statistics using a single aggregation pipeline (not 4 separate queries).
+ * Aggregated statistics using a single query.
  */
 router.get('/transactions/stats', async (req, res) => {
   try {
-    const pipeline = await Transaction.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          count: { $sum: 1 }
-        }
-      }
-    ]);
+    const pipeline = await Transaction.findAll({
+      attributes: ['status', [sequelize.fn('COUNT', sequelize.col('status')), 'count']],
+      group: ['status'],
+      raw: true
+    });
 
     const stats = { total: 0, flagged: 0, blocked: 0, cleared: 0, pending: 0 };
-    pipeline.forEach(({ _id, count }) => {
-      const key = (_id || 'pending').toLowerCase();
+    pipeline.forEach(row => {
+      // In Postgres, count is returned as a string, so parseInt
+      const count = parseInt(row.count, 10);
+      const key = (row.status || 'pending').toLowerCase();
       if (key in stats) stats[key] = count;
       stats.total += count;
     });
@@ -124,27 +118,28 @@ router.get('/transactions/all', async (req, res) => {
 
     const filter = {};
 
-    // Escape user input before using in regex to prevent ReDoS
-    if (userId) filter.userId = { $regex: escapeRegex(userId), $options: 'i' };
+    if (userId) filter.userId = { [Op.iLike]: `%${userId}%` };
     if (status) filter.status = status;
     if (minAmount || maxAmount) {
       filter.amount = {};
-      if (minAmount) filter.amount.$gte = Number(minAmount);
-      if (maxAmount) filter.amount.$lte = Number(maxAmount);
+      if (minAmount) filter.amount[Op.gte] = Number(minAmount);
+      if (maxAmount) filter.amount[Op.lte] = Number(maxAmount);
     }
 
-    const [transactions, total] = await Promise.all([
-      Transaction.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit),
-      Transaction.countDocuments(filter),
-    ]);
+    const { count, rows } = await Transaction.findAndCountAll({
+      where: filter,
+      order: [['createdAt', 'DESC']],
+      offset: skip,
+      limit: limit
+    });
 
     res.status(200).json({
-      data: transactions,
+      data: rows,
       pagination: {
         page,
         limit,
-        total,
-        pages: Math.ceil(total / limit),
+        total: count,
+        pages: Math.ceil(count / limit),
       }
     });
   } catch (err) {
@@ -159,7 +154,7 @@ router.get('/transactions/all', async (req, res) => {
  */
 router.get('/transactions/:id', async (req, res) => {
   try {
-    const tx = await Transaction.findById(req.params.id);
+    const tx = await Transaction.findByPk(req.params.id);
     if (!tx) return res.status(404).json({ error: 'Not found' });
     res.status(200).json(tx);
   } catch (err) {
@@ -177,22 +172,22 @@ router.put('/transactions/:id/review', authMiddleware, validate(reviewSchema), a
     const { id } = req.params;
     const { newStatus } = req.body;
 
-    const updatedTransaction = await Transaction.findByIdAndUpdate(
-      id,
-      { $set: { status: newStatus } },
-      { new: true }
+    const [numAffected, updatedTransactions] = await Transaction.update(
+      { status: newStatus },
+      { where: { _id: id }, returning: true }
     );
 
-    if (!updatedTransaction) return res.status(404).json({ error: 'Not found' });
+    if (numAffected === 0) return res.status(404).json({ error: 'Not found' });
+    
+    const updatedTransaction = updatedTransactions[0];
 
     // Save audit log
-    const log = new AuditLog({
+    await AuditLog.create({
       action: newStatus,
       transactionId: id,
       userId: req.user.id,
       details: `Analyst marked transaction as ${newStatus}`
     });
-    await log.save();
 
     logger.info({ transactionId: id, newStatus, analyst: req.user.id }, 'Transaction reviewed');
     res.status(200).json(updatedTransaction);
@@ -210,9 +205,9 @@ router.put('/transactions/bulk-review', authMiddleware, validate(bulkReviewSchem
   try {
     const { ids, newStatus } = req.body;
 
-    await Transaction.updateMany(
-      { _id: { $in: ids } },
-      { $set: { status: newStatus } }
+    await Transaction.update(
+      { status: newStatus },
+      { where: { _id: ids } }
     );
 
     // Audit logs for all transactions
@@ -222,7 +217,7 @@ router.put('/transactions/bulk-review', authMiddleware, validate(bulkReviewSchem
       userId: req.user.id,
       details: `Analyst bulk marked transaction as ${newStatus}`
     }));
-    await AuditLog.insertMany(logs);
+    await AuditLog.bulkCreate(logs);
 
     logger.info({ count: ids.length, newStatus, analyst: req.user.id }, 'Bulk review completed');
     res.status(200).json({ message: `Updated ${ids.length} transactions to ${newStatus}` });

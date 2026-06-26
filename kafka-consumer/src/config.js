@@ -5,7 +5,7 @@
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 
 const config = {
-  mongoUri: process.env.MONGO_URI || 'mongodb://mongodb:27017/fraudDB',
+  databaseUrl: process.env.DATABASE_URL || 'postgres://user:password@localhost:5432/fraud_db',
   kafkaBrokers: (process.env.KAFKA_BROKERS || 'kafka:9092').split(','),
   kafkaTopic: process.env.KAFKA_TOPIC || 'transactions',
   kafkaGroupId: process.env.KAFKA_GROUP_ID || 'fraud-detector-group',

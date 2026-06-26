@@ -12,7 +12,7 @@ export const TransactionItem = ({ tx, onReview, isSelected, onToggleSelect, onCl
     transition={{ duration: 0.4, type: "spring", bounce: 0.3 }}
   >
     <div className="checkbox-container" onClick={(e) => { e.stopPropagation(); onToggleSelect(); }}>
-      {isSelected ? <CheckSquare size={20} color="#3b82f6" /> : <Square size={20} color="#94a3b8" />}
+      {isSelected ? <CheckSquare size={20} color="#3b82f6" /> : <Square size={20} color="#6b7280" />}
     </div>
     <div className="info-group" onClick={onClick} style={{ cursor: 'pointer', flex: 1 }}>
       <div className="info-header">
@@ -39,7 +39,7 @@ export const TransactionItem = ({ tx, onReview, isSelected, onToggleSelect, onCl
       </div>
       
       {tx.reasoning && (
-        <div className="reasoning-badge" style={{ marginTop: '10px', fontSize: '0.85rem', color: '#888', background: 'rgba(0,0,0,0.1)', padding: '6px 10px', borderRadius: '4px', borderLeft: '3px solid var(--theme-red)' }}>
+        <div className="reasoning-badge" style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-muted)', background: 'var(--accent-red-glow)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent-red)' }}>
           <strong>Reasoning:</strong> {tx.reasoning}
         </div>
       )}

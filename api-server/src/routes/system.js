@@ -3,7 +3,7 @@
  * @description System management endpoints: health, threshold, retrain, metrics.
  */
 const express = require('express');
-const mongoose = require('mongoose');
+const sequelize = require('../database');
 const { exec } = require('child_process');
 const promClient = require('prom-client');
 const redis = require('../services/redis');
@@ -24,15 +24,21 @@ collectDefaultMetrics({ prefix: 'fraud_api_' });
  */
 router.get('/health', async (req, res) => {
   try {
-    const mongoState = mongoose.connection.readyState;
+    let pgState = 'disconnected';
+    try {
+      await sequelize.authenticate();
+      pgState = 'connected';
+    } catch (e) {
+      pgState = 'disconnected';
+    }
     const redisState = redis.status;
 
-    if (mongoState === 1 && redisState === 'ready') {
-      res.status(200).json({ status: 'OK', mongo: 'connected', redis: 'connected' });
+    if (pgState === 'connected' && redisState === 'ready') {
+      res.status(200).json({ status: 'OK', postgres: 'connected', redis: 'connected' });
     } else {
       res.status(503).json({
         status: 'DEGRADED',
-        mongo: mongoState === 1 ? 'connected' : 'disconnected',
+        postgres: pgState,
         redis: redisState === 'ready' ? 'connected' : 'disconnected',
       });
     }

@@ -65,10 +65,10 @@ export const Dashboard = () => {
   return (
     <div className="dashboard-container">
       <div className="stats-grid">
-        <StatCard title="Total Processed" value={stats.total} icon={<Activity />} color="#9e9e9e" delay={0.1} loading={loading} />
-        <StatCard title="Flagged" value={stats.flagged} icon={<ShieldAlert />} color="#e53935" delay={0.2} loading={loading} />
-        <StatCard title="Blocked" value={stats.blocked} icon={<XCircle />} color="#757575" delay={0.3} loading={loading} />
-        <StatCard title="Cleared" value={stats.cleared} icon={<CheckCircle />} color="#43a047" delay={0.4} loading={loading} />
+        <StatCard title="Total Processed" value={stats.total} icon={<Activity />} color="#3b82f6" delay={0.1} loading={loading} />
+        <StatCard title="Flagged" value={stats.flagged} icon={<ShieldAlert />} color="#ef4444" delay={0.2} loading={loading} />
+        <StatCard title="Blocked" value={stats.blocked} icon={<XCircle />} color="#6b7280" delay={0.3} loading={loading} />
+        <StatCard title="Cleared" value={stats.cleared} icon={<CheckCircle />} color="#10b981" delay={0.4} loading={loading} />
       </div>
 
       <motion.div

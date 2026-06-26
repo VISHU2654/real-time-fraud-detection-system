@@ -28,8 +28,8 @@ This project was rigorously refactored from a basic prototype into a highly resi
 16. **Centralized State Context:** Replaced chaotic, duplicate component-level polling with a unified React `DataContext` to drastically reduce network spam.
 17. **Error Boundaries:** Implemented React Error Boundaries to isolate UI crashes and provide user-friendly fallback screens.
 18. **Resilient API Client:** Built an API wrapper that automatically intercepts `401 Unauthorized` responses and refreshes the session token.
-19. **Responsive Layouts:** Re-engineered CSS with CSS Variables to support mobile screens and collapsing sidebars.
-20. **Dynamic Theming:** Added instant, zero-reload theme switching (Charcoal, Dark, Light).
+19. **Responsive Layouts:** Re-engineered CSS with CSS Variables and Flexbox wrapping to fully support mobile screens and prevent horizontal overflow.
+20. **Clean UI Aesthetics:** Upgraded to a sleek, modern dark mode utilizing pure system colors and standard fonts, removing cluttered themes.
 
 ### Infrastructure & ML Operations
 21. **9-Service Architecture:** Upgraded from 7 containers to 9, formally integrating Zookeeper and a dedicated Observability stack.

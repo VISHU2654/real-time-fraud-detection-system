@@ -1,21 +1,19 @@
-/**
- * @module models/Alert
- * @description Mongoose schema and model for fraud detection alerts.
- * Created when the ML pipeline flags a high-risk transaction.
- */
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const sequelize = require('../database');
 
-const alertSchema = new mongoose.Schema({
-  transactionId: { type: String, required: true },
-  score: { type: Number, required: true },
-  reasoning: { type: String },
-  timestamp: { type: Date, default: Date.now },
-  status: { type: String, default: 'UNREAD', enum: ['UNREAD', 'READ', 'DISMISSED'] }
+const Alert = sequelize.define('Alert', {
+  _id: { type: DataTypes.UUID, defaultValue: DataTypes.UUIDV4, primaryKey: true },
+  transactionId: { type: DataTypes.STRING, allowNull: false },
+  score: { type: DataTypes.FLOAT, allowNull: false },
+  reasoning: { type: DataTypes.TEXT },
+  timestamp: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
+  status: { type: DataTypes.ENUM('UNREAD', 'READ', 'DISMISSED'), defaultValue: 'UNREAD' }
+}, {
+  timestamps: false,
+  indexes: [
+    { fields: ['status'] },
+    { fields: ['timestamp'] }
+  ]
 });
-
-alertSchema.index({ status: 1 });
-alertSchema.index({ timestamp: -1 });
-
-const Alert = mongoose.model('Alert', alertSchema);
 
 module.exports = Alert;
