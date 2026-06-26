@@ -2,7 +2,7 @@
 
 A production-ready, distributed system for detecting fraudulent credit card transactions in real-time. Built with Node.js, React, Kafka, MongoDB, Redis, and PyTorch (ONNX).
 
-## 🚀 The 25-Point Industry-Grade Upgrade
+##  The 25-Point Industry-Grade Upgrade
 This project was rigorously refactored from a basic prototype into a highly resilient, enterprise-grade distributed system. Below are the 25 major architectural improvements implemented:
 
 ### API Server Modernization
@@ -40,7 +40,7 @@ This project was rigorously refactored from a basic prototype into a highly resi
 
 ---
 
-## 📸 Features
+##  Features
 
 ### 1. System Overview Dashboard
 Real-time system health and global metrics visualization.
