@@ -1,5 +1,7 @@
 # Real-Time Fraud Detection System
 
+**🔴 Live Demo:** [http://51.21.196.105:3000](http://51.21.196.105:3000)
+
 A production-ready, distributed system for detecting fraudulent credit card transactions in real-time. Built with Node.js, React, Kafka, MongoDB, Redis, and PyTorch (ONNX).
 
 ##  The 25-Point Industry-Grade Upgrade
