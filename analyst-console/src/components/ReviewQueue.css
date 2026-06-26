@@ -1,0 +1,92 @@
+.review-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.search-group {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px 12px;
+  border-radius: 8px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-group input {
+  background: none;
+  border: none;
+  color: #f8fafc;
+  outline: none;
+  margin-left: 8px;
+  width: 100%;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-group select {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  padding: 8px;
+  border-radius: 8px;
+  outline: none;
+}
+
+.amount-input {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  padding: 8px;
+  border-radius: 8px;
+  width: 80px;
+  outline: none;
+}
+
+.bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.select-all-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  color: #f8fafc;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.select-all-btn:hover {
+  color: #3b82f6;
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.transaction-list-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  margin-right: 16px;
+  cursor: pointer;
+}
