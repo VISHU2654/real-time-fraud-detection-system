@@ -23,10 +23,13 @@ services:
       - "4000:4000"
     networks:
       - fraud_network
+    environment:
+      - DATABASE_URL=postgres://frauduser:fraudpass@postgres:5432/fraud_db
     depends_on:
       kafka:
         condition: service_healthy
-
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
@@ -50,10 +53,13 @@ services:
     container_name: kafka-consumer
     networks:
       - fraud_network
+    environment:
+      - DATABASE_URL=postgres://frauduser:fraudpass@postgres:5432/fraud_db
     depends_on:
       kafka:
         condition: service_healthy
-
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     volumes:
@@ -96,7 +102,30 @@ services:
       retries: 5
       start_period: 10s
 
-
+  # 5. PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    networks:
+      - fraud_network
+    environment:
+      POSTGRES_USER: frauduser
+      POSTGRES_PASSWORD: fraudpass
+      POSTGRES_DB: fraud_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U frauduser -d fraud_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   # 6. Zookeeper (Required by Kafka)
   zookeeper:
@@ -193,4 +222,6 @@ networks:
 
 volumes:
   redis_data:
+    driver: local
+  postgres_data:
     driver: local
