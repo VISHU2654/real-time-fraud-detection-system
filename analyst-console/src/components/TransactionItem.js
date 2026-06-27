@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, AlertTriangle, User, MapPin, CreditCard, Square, CheckSquare } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 export const TransactionItem = ({ tx, onReview, isSelected, onToggleSelect, onClick }) => (
   <motion.li
@@ -39,8 +40,8 @@ export const TransactionItem = ({ tx, onReview, isSelected, onToggleSelect, onCl
       </div>
       
       {tx.reasoning && (
-        <div className="reasoning-badge" style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-muted)', background: 'var(--accent-red-glow)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent-red)' }}>
-          <strong>Reasoning:</strong> {tx.reasoning}
+        <div className="reasoning-badge markdown-body" style={{ marginTop: '10px', fontSize: '13px', color: 'var(--text-muted)', background: 'var(--accent-red-glow)', padding: '8px 12px', borderRadius: 'var(--radius-sm)', borderLeft: '3px solid var(--accent-red)' }}>
+          <ReactMarkdown>{tx.reasoning}</ReactMarkdown>
         </div>
       )}
     </div>
